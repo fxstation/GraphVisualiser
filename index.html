@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Tree Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="controls">
+            <button id="add-node">Add Node</button>
+            <button id="remove-node">Remove Node</button>
+            <button id="export-tree">Export Tree</button>
+            <input type="file" id="import-tree" accept=".json">
+            <div id="display-options">
+                <h3>Display Options</h3>
+                <div id="attribute-list"></div>
+            </div>
+        </div>
+        <div id="properties">
+            <h3>Node Properties</h3>
+            <label>Name: <input type="text" id="node-name"></label><br>
+            <label>Power: <input type="number" step="0.01" id="node-power"></label><br>
+            <label>Color: <input type="color" id="node-color"></label><br>
+        </div>
+        <div id="tree-container">
+            <svg id="tree-svg"></svg>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
