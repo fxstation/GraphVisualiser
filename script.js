@@ -544,3 +544,30 @@ const quickSaveBtn = document.getElementById('quick-save');
 if (quickSaveBtn) quickSaveBtn.onclick = quickSaveTree;
 const quickLoadBtn = document.getElementById('quick-load');
 if (quickLoadBtn) quickLoadBtn.onclick = quickLoadTree;
+
+function moveNodeUp() {
+    if (!selectedNode || selectedNode === treeData) return;
+    const parent = findParent(treeData, selectedNode);
+    if (!parent) return;
+    const idx = parent.children.indexOf(selectedNode);
+    if (idx > 0) {
+        parent.children.splice(idx, 1);
+        parent.children.splice(idx - 1, 0, selectedNode);
+        updateTree();
+    }
+}
+
+function moveNodeDown() {
+    if (!selectedNode || selectedNode === treeData) return;
+    const parent = findParent(treeData, selectedNode);
+    if (!parent) return;
+    const idx = parent.children.indexOf(selectedNode);
+    if (idx < parent.children.length - 1) {
+        parent.children.splice(idx, 1);
+        parent.children.splice(idx + 1, 0, selectedNode);
+        updateTree();
+    }
+}
+
+document.getElementById("move-up").addEventListener("click", moveNodeUp);
+document.getElementById("move-down").addEventListener("click", moveNodeDown);
