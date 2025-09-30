@@ -3,7 +3,13 @@ let treeData = {
     name: "Root",
     power: 0,
     color: "#ffffff",
-    children: []
+    children: [],
+    displayOptions: {
+        name: true,
+        power: true,
+        child_power: true,
+        total_power: true
+    }
 };
 
 let draggedNode = null;
@@ -70,7 +76,12 @@ function updateTree() {
     node.each(function(d) {
         // Draw text first
         const textGroup = d3.select(this).append("text");
-        const lines = displayAttributes.map(attr => {
+        // Only show attributes if both global and node display options are enabled
+        const lines = displayAttributes.filter(attr => {
+            const globalEnabled = document.getElementById("attribute-list")?.querySelector(`input[data-attr='${attr}']`)?.checked;
+            const nodeEnabled = d.data.displayOptions ? d.data.displayOptions[attr] : true;
+            return globalEnabled && nodeEnabled;
+        }).map(attr => {
             if (attr === 'name') return d.data.name;
             if (attr === 'power') return `Power: ${d.data.power}`;
             if (attr === 'child_power') return `Child Power: ${d.data.child_power}`;
@@ -168,7 +179,27 @@ function selectNode(node) {
     document.getElementById("node-name").value = node.name;
     document.getElementById("node-power").value = node.power;
     document.getElementById("node-color").value = node.color;
+    updateNodeDisplayOptionsUI();
     updateTree();
+}
+
+function updateNodeDisplayOptionsUI() {
+    const container = document.getElementById("node-display-options");
+    container.innerHTML = "<strong>Node Display Options:</strong><br>";
+    if (!selectedNode) return;
+    ["name", "power", "child_power", "total_power"].forEach(attr => {
+        const label = document.createElement("label");
+        label.style.display = "block";
+        label.style.marginBottom = "4px";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.id = "node-display-" + attr;
+        cb.checked = selectedNode.displayOptions[attr];
+        cb.addEventListener("change", updateNodeProperties);
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(" " + attr.replace('_', ' ')));
+        container.appendChild(label);
+    });
 }
 
 function updateNodeProperties() {
@@ -176,6 +207,11 @@ function updateNodeProperties() {
         selectedNode.name = document.getElementById("node-name").value;
         selectedNode.power = parseFloat(document.getElementById("node-power").value) || 0;
         selectedNode.color = document.getElementById("node-color").value;
+        // Update display options from checkboxes
+        ["name", "power", "child_power", "total_power"].forEach(attr => {
+            const cb = document.getElementById("node-display-" + attr);
+            if (cb) selectedNode.displayOptions[attr] = cb.checked;
+        });
         updateTree();
     }
 }
@@ -187,7 +223,13 @@ function addNode() {
         name: "New Node",
         power: 0,
         color: "#ffffff",
-        children: []
+        children: [],
+        displayOptions: {
+            name: true,
+            power: true,
+            child_power: true,
+            total_power: true
+        }
     };
     parent.children.push(newNode);
     selectNode(newNode);
@@ -224,6 +266,21 @@ function importTree(event) {
         reader.onload = function(e) {
             try {
                 treeData = JSON.parse(e.target.result);
+                // Ensure displayOptions exists for all nodes
+                function ensureDisplayOptions(node) {
+                    if (!node.displayOptions) {
+                        node.displayOptions = {
+                            name: true,
+                            power: true,
+                            child_power: true,
+                            total_power: true
+                        };
+                    }
+                    if (node.children) {
+                        node.children.forEach(ensureDisplayOptions);
+                    }
+                }
+                ensureDisplayOptions(treeData);
                 selectedNode = null;
                 updateTree();
             } catch (err) {
@@ -243,6 +300,8 @@ function updateDisplayOptions() {
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = true; // For simplicity, all checked
+        checkbox.setAttribute("data-attr", attr);
+        checkbox.addEventListener("change", updateTree);
         const label = document.createElement("span");
         label.textContent = attr.replace('_', ' ').toUpperCase();
         item.appendChild(checkbox);
@@ -251,6 +310,14 @@ function updateDisplayOptions() {
     });
     // For order, make draggable, but for simplicity, fixed order
 }
+
+// Add node display options UI to properties panel
+const propertiesPanel = document.getElementById("properties");
+const nodeDisplayDiv = document.createElement("div");
+nodeDisplayDiv.id = "node-display-options";
+nodeDisplayDiv.style.marginTop = "10px";
+nodeDisplayDiv.innerHTML = "<strong>Node Display Options:</strong>";
+propertiesPanel.appendChild(nodeDisplayDiv);
 
 document.getElementById("add-node").addEventListener("click", addNode);
 document.getElementById("remove-node").addEventListener("click", removeNode);
