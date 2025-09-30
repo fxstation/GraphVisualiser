@@ -183,7 +183,10 @@ function dragStart(event, d) {
     // Use leftShift/topShift for correct offset
     d.dragOffsetX = event.x - (d.y + (window.leftShift || 0));
     d.dragOffsetY = event.y - (d.x + (window.topShift || 0));
-    d3.select(this).raise();
+    // Robustly raise node to front
+    if (this.parentNode) {
+        this.parentNode.appendChild(this);
+    }
 }
 
 function drag(event, d) {
@@ -334,6 +337,13 @@ function exportTree() {
     linkElement.click();
 }
 
+function reindexNodeIds(node) {
+    node.id = nodeIdCounter++;
+    if (node.children && node.children.length) {
+        node.children.forEach(reindexNodeIds);
+    }
+}
+
 function importTree(event) {
     const file = event.target.files[0];
     if (file) {
@@ -356,6 +366,9 @@ function importTree(event) {
                     }
                 }
                 ensureDisplayOptions(treeData);
+                // Re-index node ids
+                nodeIdCounter = 1;
+                reindexNodeIds(treeData);
                 selectedNode = null;
                 updateTree();
             } catch (err) {
@@ -533,6 +546,18 @@ function quickSaveTree() {
     showTopMessage('Tree saved to cache!');
 }
 
+function ensureUniqueNodeIds(node, usedIds = new Set()) {
+    if (usedIds.has(node.id)) {
+        node.id = ++nodeIdCounter;
+    }
+    usedIds.add(node.id);
+    if (node.children && node.children.length) {
+        node.children.forEach(child => ensureUniqueNodeIds(child, usedIds));
+    }
+}
+
+
+
 function quickLoadTree() {
     const cached = localStorage.getItem('graphTreeCache');
     if (cached) {
@@ -544,7 +569,9 @@ function quickLoadTree() {
                         name: true,
                         power: true,
                         child_power: true,
-                        total_power: true
+                        total_power: true,
+                        location: true,
+                        note: true
                     };
                 }
                 if (node.children) {
@@ -552,6 +579,9 @@ function quickLoadTree() {
                 }
             }
             ensureDisplayOptions(treeData);
+            // Re-index node ids
+            nodeIdCounter = 1;
+            reindexNodeIds(treeData);
             selectedNode = null;
             updateTree();
             showTopMessage('Tree loaded from cache!');
