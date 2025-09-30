@@ -594,3 +594,23 @@ function moveNodeDown() {
 
 document.getElementById("move-up").addEventListener("click", moveNodeUp);
 document.getElementById("move-down").addEventListener("click", moveNodeDown);
+function duplicateNode() {
+    if (!selectedNode) return;
+    const parent = findParent(treeData, selectedNode) || treeData;
+    // Deep clone the selected node (excluding children)
+    const clone = {
+        id: nodeIdCounter++,
+        name: selectedNode.name,
+        power: selectedNode.power,
+        color: selectedNode.color,
+        location: selectedNode.location,
+        note: selectedNode.note,
+        children: [],
+        displayOptions: { ...selectedNode.displayOptions }
+    };
+    parent.children.push(clone);
+    selectNode(clone);
+    updateTree();
+}
+
+document.getElementById("duplicate-node").addEventListener("click", duplicateNode);
