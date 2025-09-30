@@ -198,30 +198,32 @@ function drag(event, d) {
 }
 
 function dragEnd(event, d) {
-    // Use leftShift/topShift for pointer position
-    const [px, py] = d3.pointer(event, g.node());
-    const x = px - (window.leftShift || 0);
-    const y = py - (window.topShift || 0);
-    let foundTarget = null;
-    root.descendants().forEach(h => {
-        if (h.data === draggedNode) return;
-        const rectLeft = h.y - h.centerX + h.rectX + (window.leftShift || 0);
-        const rectTop = h.x - h.centerY + h.rectY + (window.topShift || 0);
-        if (px >= rectLeft && px <= rectLeft + h.rectWidth && py >= rectTop && py <= rectTop + h.rectHeight) {
-            foundTarget = h.data;
+    safeTreeChange(() => {
+        // Use leftShift/topShift for pointer position
+        const [px, py] = d3.pointer(event, g.node());
+        const x = px - (window.leftShift || 0);
+        const y = py - (window.topShift || 0);
+        let foundTarget = null;
+        root.descendants().forEach(h => {
+            if (h.data === draggedNode) return;
+            const rectLeft = h.y - h.centerX + h.rectX + (window.leftShift || 0);
+            const rectTop = h.x - h.centerY + h.rectY + (window.topShift || 0);
+            if (px >= rectLeft && px <= rectLeft + h.rectWidth && py >= rectTop && py <= rectTop + h.rectHeight) {
+                foundTarget = h.data;
+            }
+        });
+        dropTarget = foundTarget;
+        if (dropTarget && dropTarget !== draggedNode && !isDescendant(draggedNode, dropTarget)) {
+            const oldParent = findParent(treeData, draggedNode);
+            if (oldParent) {
+                oldParent.children = oldParent.children.filter(c => c !== draggedNode);
+            }
+            dropTarget.children.push(draggedNode);
         }
+        updateTree();
+        draggedNode = null;
+        dropTarget = null;
     });
-    dropTarget = foundTarget;
-    if (dropTarget && dropTarget !== draggedNode && !isDescendant(draggedNode, dropTarget)) {
-        const oldParent = findParent(treeData, draggedNode);
-        if (oldParent) {
-            oldParent.children = oldParent.children.filter(c => c !== draggedNode);
-        }
-        dropTarget.children.push(draggedNode);
-    }
-    updateTree();
-    draggedNode = null;
-    dropTarget = null;
 }
 
 function isDescendant(node, target) {
@@ -291,40 +293,43 @@ function updateNodeProperties() {
 }
 
 function addNode() {
-    const parent = selectedNode || treeData;
-    const newNode = {
-        id: nodeIdCounter++,
-        name: "New Node",
-        power: 0,
-        color: "#ffffff",
-        location: "",
-        note: "",
-        children: [],
-        displayOptions: {
-            name: true,
-            power: true,
-            child_power: true,
-            total_power: true,
-            location: true,
-            note: true
-        }
-    };
-    parent.children.push(newNode);
-    selectNode(newNode);
-    updateTree();
+    safeTreeChange(() => {
+        const parent = selectedNode || treeData;
+        const newNode = {
+            id: nodeIdCounter++,
+            name: "New Node",
+            power: 0,
+            color: "#ffffff",
+            location: "",
+            note: "",
+            children: [],
+            displayOptions: {
+                name: true,
+                power: true,
+                child_power: true,
+                total_power: true,
+                location: true,
+                note: true
+            }
+        };
+        parent.children.push(newNode);
+        selectNode(newNode);
+        updateTree();
+    });
 }
 
 function removeNode() {
-    if (selectedNode && selectedNode !== treeData) {
-        const parent = findParent(treeData, selectedNode);
-        if (parent) {
-            parent.children = parent.children.filter(c => c !== selectedNode);
-            // Optionally attach children to parent
-            parent.children.push(...selectedNode.children);
+    safeTreeChange(() => {
+        if (selectedNode && selectedNode !== treeData) {
+            const parent = findParent(treeData, selectedNode);
+            if (parent) {
+                parent.children = parent.children.filter(c => c !== selectedNode);
+                parent.children.push(...selectedNode.children);
+            }
+            selectedNode = null;
+            updateTree();
         }
-        selectedNode = null;
-        updateTree();
-    }
+    });
 }
 
 function exportTree() {
@@ -599,48 +604,100 @@ const quickLoadBtn = document.getElementById('quick-load');
 if (quickLoadBtn) quickLoadBtn.onclick = quickLoadTree;
 
 function moveNodeUp() {
-    if (!selectedNode || selectedNode === treeData) return;
-    const parent = findParent(treeData, selectedNode);
-    if (!parent) return;
-    const idx = parent.children.indexOf(selectedNode);
-    if (idx > 0) {
-        parent.children.splice(idx, 1);
-        parent.children.splice(idx - 1, 0, selectedNode);
-        updateTree();
-    }
+    safeTreeChange(() => {
+        if (!selectedNode || selectedNode === treeData) return;
+        const parent = findParent(treeData, selectedNode);
+        if (!parent) return;
+        const idx = parent.children.indexOf(selectedNode);
+        if (idx > 0) {
+            parent.children.splice(idx, 1);
+            parent.children.splice(idx - 1, 0, selectedNode);
+            updateTree();
+        }
+    });
 }
 
 function moveNodeDown() {
-    if (!selectedNode || selectedNode === treeData) return;
-    const parent = findParent(treeData, selectedNode);
-    if (!parent) return;
-    const idx = parent.children.indexOf(selectedNode);
-    if (idx < parent.children.length - 1) {
-        parent.children.splice(idx, 1);
-        parent.children.splice(idx + 1, 0, selectedNode);
-        updateTree();
-    }
+    safeTreeChange(() => {
+        if (!selectedNode || selectedNode === treeData) return;
+        const parent = findParent(treeData, selectedNode);
+        if (!parent) return;
+        const idx = parent.children.indexOf(selectedNode);
+        if (idx < parent.children.length - 1) {
+            parent.children.splice(idx, 1);
+            parent.children.splice(idx + 1, 0, selectedNode);
+            updateTree();
+        }
+    });
 }
 
 document.getElementById("move-up").addEventListener("click", moveNodeUp);
 document.getElementById("move-down").addEventListener("click", moveNodeDown);
 function duplicateNode() {
-    if (!selectedNode) return;
-    const parent = findParent(treeData, selectedNode) || treeData;
-    // Deep clone the selected node (excluding children)
-    const clone = {
-        id: nodeIdCounter++,
-        name: selectedNode.name,
-        power: selectedNode.power,
-        color: selectedNode.color,
-        location: selectedNode.location,
-        note: selectedNode.note,
-        children: [],
-        displayOptions: { ...selectedNode.displayOptions }
-    };
-    parent.children.push(clone);
-    selectNode(clone);
-    updateTree();
+    safeTreeChange(() => {
+        if (!selectedNode) return;
+        const parent = findParent(treeData, selectedNode) || treeData;
+        // Deep clone the selected node (excluding children)
+        const clone = {
+            id: nodeIdCounter++,
+            name: selectedNode.name,
+            power: selectedNode.power,
+            color: selectedNode.color,
+            location: selectedNode.location,
+            note: selectedNode.note,
+            children: [],
+            displayOptions: { ...selectedNode.displayOptions }
+        };
+        parent.children.push(clone);
+        selectNode(clone);
+        updateTree();
+    });
 }
 
 document.getElementById("duplicate-node").addEventListener("click", duplicateNode);
+
+let undoStack = [];
+let redoStack = [];
+
+function pushUndoState() {
+    undoStack.push(JSON.stringify(treeData));
+    if (undoStack.length > 100) undoStack.shift(); // Limit history size
+    redoStack = [];
+}
+
+function undoTree() {
+    if (undoStack.length > 0) {
+        redoStack.push(JSON.stringify(treeData));
+        treeData = JSON.parse(undoStack.pop());
+        selectedNode = null;
+        updateTree();
+        showTopMessage('Undo performed');
+    }
+}
+
+function redoTree() {
+    if (redoStack.length > 0) {
+        undoStack.push(JSON.stringify(treeData));
+        treeData = JSON.parse(redoStack.pop());
+        selectedNode = null;
+        updateTree();
+        showTopMessage('Redo performed');
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        undoTree();
+    }
+    if (e.ctrlKey && e.key === 'y') {
+        e.preventDefault();
+        redoTree();
+    }
+});
+
+// Call pushUndoState before any tree-changing operation
+function safeTreeChange(fn) {
+    pushUndoState();
+    fn();
+}
