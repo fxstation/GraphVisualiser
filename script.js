@@ -51,32 +51,39 @@ function updateTree() {
     // Calculate dynamic size based on node count and depth
     const allNodes = root.descendants();
     const maxDepth = Math.max(...allNodes.map(n => n.depth));
+    // Count max nodes at any depth (breadth)
+    const depthCounts = {};
+    allNodes.forEach(n => {
+        depthCounts[n.depth] = (depthCounts[n.depth] || 0) + 1;
+    });
+    const maxBreadth = Math.max(...Object.values(depthCounts));
     const nodeHeight = 80;
     const nodeWidth = 220;
-    // Find min/max x and y for all nodes to avoid overlap and fit SVG
-    treeLayout.size([1, 1]); // Temporary to get positions
+    // Estimate vertical spacing to avoid overlap
+    const minVerticalSpacing = nodeHeight + 20;
+    const minHorizontalSpacing = nodeWidth + 20;
+    // Set tree layout size so nodes do not overlap
+    const svgHeight = Math.max(maxBreadth * minVerticalSpacing, 600);
+    const svgWidth = Math.max((maxDepth + 2) * minHorizontalSpacing, 800);
+    treeLayout.size([svgHeight - 80, svgWidth - 80]);
     treeLayout(root);
+    // Calculate min/max after layout
     const minX = Math.min(...allNodes.map(n => n.x));
     const maxX = Math.max(...allNodes.map(n => n.x));
     const minY = Math.min(...allNodes.map(n => n.y));
     const maxY = Math.max(...allNodes.map(n => n.y));
-    // Add margin
     const margin = 40;
-    const svgWidth = Math.max(maxY - minY + nodeWidth + margin * 2, 800);
-    const svgHeight = Math.max(maxX - minX + nodeHeight + margin * 2, 600);
-    treeLayout.size([svgHeight - margin * 2, svgWidth - margin * 2]);
-    treeLayout(root);
+    // Calculate left/top shift so tree is always visible
+    const leftShift = margin - minY;
+    const topShift = margin - minX + margin; // Add extra margin to top
+    // Store leftShift/topShift globally for drag logic
+    window.leftShift = leftShift;
+    window.topShift = topShift;
     d3.select("#tree-svg")
         .attr("width", svgWidth)
         .attr("height", svgHeight)
         .style("min-width", svgWidth + "px")
         .style("min-height", svgHeight + "px");
-    // Calculate left/top shift so tree is always visible
-    const leftShift = margin - minY;
-    const topShift = margin - minX;
-    // Store leftShift/topShift globally for drag logic
-    window.leftShift = leftShift;
-    window.topShift = topShift;
     // Update links
     const link = g.selectAll(".link")
         .data(root.links())
