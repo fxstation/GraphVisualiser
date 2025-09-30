@@ -12,6 +12,7 @@ let selectedNode = null;
 let nodeIdCounter = 1;
 let displayAttributes = ['name', 'power', 'child_power', 'total_power'];
 let root;
+let isDragging = false;
 
 const svg = d3.select("#tree-svg");
 const width = window.innerWidth - 400;
@@ -54,7 +55,7 @@ function updateTree() {
 
     // Update nodes
     const node = g.selectAll(".node")
-        .data(root.descendants())
+        .data(root.descendants(), d => d.data.id)
         .join("g")
         .attr("class", "node")
         .on("click", (event, d) => selectNode(d.data))
@@ -67,40 +68,36 @@ function updateTree() {
 
     // Adjust rect size and add rect and text
     node.each(function(d) {
+        // Draw text first
         const textGroup = d3.select(this).append("text");
-
         const lines = displayAttributes.map(attr => {
             if (attr === 'name') return d.data.name;
             if (attr === 'power') return `Power: ${d.data.power}`;
             if (attr === 'child_power') return `Child Power: ${d.data.child_power}`;
             if (attr === 'total_power') return `Total Power: ${d.data.total_power}`;
         });
-
         lines.forEach((line, i) => {
             textGroup.append("tspan")
                 .attr("x", 0)
                 .attr("dy", i === 0 ? 0 : "1.2em")
                 .text(line);
         });
-
         const textBBox = textGroup.node().getBBox();
         const centerX = textBBox.x + textBBox.width / 2;
         const centerY = textBBox.y + textBBox.height / 2;
-
         d3.select(this).attr("transform", `translate(${d.y - centerX},${d.x - centerY})`);
-
         d.centerX = centerX;
         d.centerY = centerY;
         d.rectX = textBBox.x - 5;
         d.rectY = textBBox.y - 5;
         d.rectWidth = textBBox.width + 10;
         d.rectHeight = textBBox.height + 10;
-
+        // Draw rectangle after text
         d3.select(this).insert("rect", "text")
-            .attr("x", textBBox.x - 5)
-            .attr("y", textBBox.y - 5)
-            .attr("width", textBBox.width + 10)
-            .attr("height", textBBox.height + 10)
+            .attr("x", d.rectX)
+            .attr("y", d.rectY)
+            .attr("width", d.rectWidth)
+            .attr("height", d.rectHeight)
             .attr("fill", d.data.color)
             .attr("stroke", d.data === selectedNode ? "red" : "black")
             .attr("stroke-width", 2);
@@ -109,12 +106,14 @@ function updateTree() {
 
 function dragStart(event, d) {
     draggedNode = d.data;
+    selectNode(draggedNode);
     d.dragOffsetX = event.x - d.y;
     d.dragOffsetY = event.y - d.x;
     d3.select(this).raise();
 }
 
 function drag(event, d) {
+    isDragging = true;
     const newX = event.x - d.dragOffsetX;
     const newY = event.y - d.dragOffsetY;
     d3.select(this).attr("transform", `translate(${newX - d.centerX},${newY - d.centerY})`);
