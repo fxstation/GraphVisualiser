@@ -3,12 +3,16 @@ let treeData = {
     name: "Root",
     power: 0,
     color: "#ffffff",
+    location: "",
+    note: "",
     children: [],
     displayOptions: {
         name: true,
         power: true,
         child_power: true,
-        total_power: true
+        total_power: true,
+        location: true,
+        note: true
     }
 };
 
@@ -16,7 +20,7 @@ let draggedNode = null;
 let dropTarget = null;
 let selectedNode = null;
 let nodeIdCounter = 1;
-let displayAttributes = ['name', 'power', 'child_power', 'total_power'];
+let displayAttributes = ['name', 'power', 'child_power', 'total_power', 'location', 'note'];
 let root;
 let isDragging = false;
 let isPanning = false;
@@ -47,6 +51,13 @@ function updateTree() {
                 return sum + child.total_power;
             }, 0);
             node.total_power = node.child_power + node.power;
+        }
+        // Ensure new attributes exist
+        if (node.location === undefined) node.location = "";
+        if (node.note === undefined) node.note = "";
+        if (!node.displayOptions) {
+            node.displayOptions = {};
+            displayAttributes.forEach(attr => node.displayOptions[attr] = true);
         }
     }
     computePowers(treeData);
@@ -126,6 +137,8 @@ function updateTree() {
             if (attr === 'power') return `Power: ${d.data.power}`;
             if (attr === 'child_power') return `Child Power: ${d.data.child_power}`;
             if (attr === 'total_power') return `Total Power: ${d.data.total_power}`;
+            if (attr === 'location') return `Location: ${d.data.location}`;
+            if (attr === 'note') return `Note: ${d.data.note}`;
         });
         lines.forEach((line, i) => {
             textGroup.append("tspan")
@@ -233,6 +246,8 @@ function selectNode(node) {
     document.getElementById("node-name").value = node.name;
     document.getElementById("node-power").value = node.power;
     document.getElementById("node-color").value = node.color;
+    document.getElementById("node-location").value = node.location || "";
+    document.getElementById("node-note").value = node.note || "";
     updateNodeDisplayOptionsUI();
     updateTree();
 }
@@ -241,7 +256,7 @@ function updateNodeDisplayOptionsUI() {
     const container = document.getElementById("node-display-options");
     container.innerHTML = "<strong>Node Display Options:</strong><br>";
     if (!selectedNode) return;
-    ["name", "power", "child_power", "total_power"].forEach(attr => {
+    displayAttributes.forEach(attr => {
         const label = document.createElement("label");
         label.style.display = "block";
         label.style.marginBottom = "4px";
@@ -261,8 +276,10 @@ function updateNodeProperties() {
         selectedNode.name = document.getElementById("node-name").value;
         selectedNode.power = parseFloat(document.getElementById("node-power").value) || 0;
         selectedNode.color = document.getElementById("node-color").value;
+        selectedNode.location = document.getElementById("node-location").value;
+        selectedNode.note = document.getElementById("node-note").value;
         // Update display options from checkboxes
-        ["name", "power", "child_power", "total_power"].forEach(attr => {
+        displayAttributes.forEach(attr => {
             const cb = document.getElementById("node-display-" + attr);
             if (cb) selectedNode.displayOptions[attr] = cb.checked;
         });
@@ -277,12 +294,16 @@ function addNode() {
         name: "New Node",
         power: 0,
         color: "#ffffff",
+        location: "",
+        note: "",
         children: [],
         displayOptions: {
             name: true,
             power: true,
             child_power: true,
-            total_power: true
+            total_power: true,
+            location: true,
+            note: true
         }
     };
     parent.children.push(newNode);
@@ -383,6 +404,8 @@ document.getElementById("import-tree").addEventListener("change", importTree);
 document.getElementById("node-name").addEventListener("input", updateNodeProperties);
 document.getElementById("node-power").addEventListener("input", updateNodeProperties);
 document.getElementById("node-color").addEventListener("input", updateNodeProperties);
+document.getElementById("node-location").addEventListener("input", updateNodeProperties);
+document.getElementById("node-note").addEventListener("input", updateNodeProperties);
 
 function updateTransform() {
     g.attr("transform", `translate(${panOffset.x},${panOffset.y}) scale(${zoomLevel})`);
