@@ -68,7 +68,9 @@ function updateTree() {
     treeLayout(root);
     d3.select("#tree-svg")
         .attr("width", svgWidth)
-        .attr("height", svgHeight);
+        .attr("height", svgHeight)
+        .style("min-width", svgWidth + "px")
+        .style("min-height", svgHeight + "px");
     // Calculate left/top shift so tree is always visible
     const leftShift = margin - minY;
     const topShift = margin - minX;
@@ -143,6 +145,7 @@ function updateTree() {
     link.attr("d", d3.linkHorizontal()
         .x(d => d.y + leftShift)
         .y(d => d.x + topShift));
+    resizeTreeContainer();
 }
 
 function dragStart(event, d) {
@@ -364,6 +367,25 @@ document.getElementById("import-tree").addEventListener("change", importTree);
 document.getElementById("node-name").addEventListener("input", updateNodeProperties);
 document.getElementById("node-power").addEventListener("input", updateNodeProperties);
 document.getElementById("node-color").addEventListener("input", updateNodeProperties);
+
+function resizeTreeContainer() {
+    const treeContainer = document.getElementById('tree-container');
+    const svg = document.getElementById('tree-svg');
+    // Use leftShift/topShift to ensure scrollable area covers the whole graph
+    const svgWidth = svg ? parseInt(svg.getAttribute('width') || 0) : 0;
+    const svgHeight = svg ? parseInt(svg.getAttribute('height') || 0) : 0;
+    const leftShift = window.leftShift || 0;
+    const topShift = window.topShift || 0;
+    if (treeContainer && svg) {
+        treeContainer.style.height = Math.max(window.innerHeight, svgHeight + topShift) + 'px';
+        treeContainer.style.width = Math.max(window.innerWidth, svgWidth + leftShift) + 'px';
+        treeContainer.style.overflow = 'auto';
+    }
+}
+window.addEventListener('resize', resizeTreeContainer);
+
+// Initial call
+resizeTreeContainer();
 
 updateDisplayOptions();
 updateTree();
