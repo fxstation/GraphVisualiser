@@ -449,14 +449,6 @@ resizeTreeContainer();
 updateDisplayOptions();
 updateTree();
 
-// Add Zoom to Fit button
-const controls = document.getElementById('controls');
-const zoomFitBtn = document.createElement('button');
-zoomFitBtn.id = 'zoom-fit';
-zoomFitBtn.textContent = 'Bring to Center';
-controls.appendChild(zoomFitBtn);
-zoomFitBtn.addEventListener('click', zoomToFit);
-
 function zoomToFit() {
     // Get bounding box of all nodes
     const nodes = g.selectAll('.node').nodes();
@@ -482,3 +474,73 @@ function zoomToFit() {
     panOffset.y = svgRect.height / 2 - (minY + graphHeight / 2) * scale;
     updateTransform();
 }
+
+// Ensure Zoom to Fit button calls zoomToFit
+const zoomFitBtn = document.getElementById('zoom-fit');
+if (zoomFitBtn) zoomFitBtn.onclick = zoomToFit;
+
+function showTopMessage(msg) {
+    let msgDiv = document.getElementById('top-message');
+    if (!msgDiv) {
+        msgDiv = document.createElement('div');
+        msgDiv.id = 'top-message';
+        msgDiv.style.position = 'fixed';
+        msgDiv.style.top = '10px';
+        msgDiv.style.left = '50%';
+        msgDiv.style.transform = 'translateX(-50%)';
+        msgDiv.style.background = 'rgba(40,40,40,0.95)';
+        msgDiv.style.color = '#fff';
+        msgDiv.style.padding = '8px 24px';
+        msgDiv.style.borderRadius = '6px';
+        msgDiv.style.zIndex = '9999';
+        msgDiv.style.fontSize = '1.1em';
+        msgDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+        document.body.appendChild(msgDiv);
+    }
+    msgDiv.textContent = msg;
+    msgDiv.style.display = 'block';
+    clearTimeout(msgDiv._hideTimeout);
+    msgDiv._hideTimeout = setTimeout(() => {
+        msgDiv.style.display = 'none';
+    }, 1500);
+}
+
+function quickSaveTree() {
+    localStorage.setItem('graphTreeCache', JSON.stringify(treeData));
+    showTopMessage('Tree saved to cache!');
+}
+
+function quickLoadTree() {
+    const cached = localStorage.getItem('graphTreeCache');
+    if (cached) {
+        try {
+            treeData = JSON.parse(cached);
+            function ensureDisplayOptions(node) {
+                if (!node.displayOptions) {
+                    node.displayOptions = {
+                        name: true,
+                        power: true,
+                        child_power: true,
+                        total_power: true
+                    };
+                }
+                if (node.children) {
+                    node.children.forEach(ensureDisplayOptions);
+                }
+            }
+            ensureDisplayOptions(treeData);
+            selectedNode = null;
+            updateTree();
+            showTopMessage('Tree loaded from cache!');
+        } catch (err) {
+            showTopMessage('Failed to load tree from cache!');
+        }
+    } else {
+        showTopMessage('No cached tree found!');
+    }
+}
+// Attach to existing buttons
+const quickSaveBtn = document.getElementById('quick-save');
+if (quickSaveBtn) quickSaveBtn.onclick = quickSaveTree;
+const quickLoadBtn = document.getElementById('quick-load');
+if (quickLoadBtn) quickLoadBtn.onclick = quickLoadTree;

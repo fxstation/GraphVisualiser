@@ -32,10 +32,21 @@
 <body>
     <div id="app">
         <div id="controls">
-            <button id="add-node">Add Node</button>
-            <button id="remove-node">Remove Node</button>
-            <button id="export-tree">Export Tree</button>
-            <input type="file" id="import-tree" accept=".json">
+            <div id="node-group" style="margin-bottom:10px;">
+                <button id="add-node">Add Node</button>
+                <button id="remove-node">Remove Node</button>
+            </div>
+            <div id="file-group" style="margin-bottom:10px;">
+                <button id="export-tree">Export Tree</button>
+                <input type="file" id="import-tree" accept=".json">
+            </div>
+            <div id="quick-group" style="margin-bottom:10px;">
+                <button id="quick-save">Quick Save</button>
+                <button id="quick-load">Quick Load</button>
+            </div>
+            <div id="zoom-group" style="margin-bottom:10px;">
+                <button id="zoom-fit">Bring to Center</button>
+            </div>
             <div id="display-options">
                 <h3>Display Options</h3>
                 <div id="attribute-list"></div>
