@@ -19,6 +19,11 @@ let nodeIdCounter = 1;
 let displayAttributes = ['name', 'power', 'child_power', 'total_power'];
 let root;
 let isDragging = false;
+let isPanning = false;
+let panStart = null;
+let panTransform = {x: 0, y: 0};
+let zoomLevel = 1;
+let panOffset = {x: 0, y: 0};
 
 const svg = d3.select("#tree-svg");
 const width = window.innerWidth - 400;
@@ -379,6 +384,49 @@ document.getElementById("node-name").addEventListener("input", updateNodePropert
 document.getElementById("node-power").addEventListener("input", updateNodeProperties);
 document.getElementById("node-color").addEventListener("input", updateNodeProperties);
 
+function updateTransform() {
+    g.attr("transform", `translate(${panOffset.x},${panOffset.y}) scale(${zoomLevel})`);
+}
+
+svg.on("mousedown", function(event) {
+    if (event.target === svg.node()) {
+        isPanning = true;
+        panStart = {x: event.clientX, y: event.clientY};
+        svg.style("cursor", "grab");
+    }
+});
+svg.on("mousemove", function(event) {
+    if (isPanning) {
+        const dx = event.clientX - panStart.x;
+        const dy = event.clientY - panStart.y;
+        panOffset.x += dx;
+        panOffset.y += dy;
+        updateTransform();
+        panStart = {x: event.clientX, y: event.clientY};
+    }
+});
+svg.on("mouseup", function() {
+    isPanning = false;
+    svg.style("cursor", "default");
+});
+svg.on("mouseleave", function() {
+    isPanning = false;
+    svg.style("cursor", "default");
+});
+svg.on("wheel", function(event) {
+    event.preventDefault();
+    const delta = event.deltaY;
+    // Zoom to mouse position
+    const mouse = d3.pointer(event, svg.node());
+    const prevZoom = zoomLevel;
+    zoomLevel *= delta > 0 ? 0.9 : 1.1;
+    zoomLevel = Math.max(0.2, Math.min(zoomLevel, 5));
+    // Adjust panOffset so zoom centers on mouse
+    panOffset.x = mouse[0] - ((mouse[0] - panOffset.x) * (zoomLevel / prevZoom));
+    panOffset.y = mouse[1] - ((mouse[1] - panOffset.y) * (zoomLevel / prevZoom));
+    updateTransform();
+});
+
 function resizeTreeContainer() {
     const treeContainer = document.getElementById('tree-container');
     const svg = document.getElementById('tree-svg');
@@ -400,3 +448,37 @@ resizeTreeContainer();
 
 updateDisplayOptions();
 updateTree();
+
+// Add Zoom to Fit button
+const controls = document.getElementById('controls');
+const zoomFitBtn = document.createElement('button');
+zoomFitBtn.id = 'zoom-fit';
+zoomFitBtn.textContent = 'Bring to Center';
+controls.appendChild(zoomFitBtn);
+zoomFitBtn.addEventListener('click', zoomToFit);
+
+function zoomToFit() {
+    // Get bounding box of all nodes
+    const nodes = g.selectAll('.node').nodes();
+    if (nodes.length === 0) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(node => {
+        const bbox = node.getBBox();
+        const tx = node.transform.baseVal.length ? node.transform.baseVal.getItem(0).matrix.e : 0;
+        const ty = node.transform.baseVal.length ? node.transform.baseVal.getItem(0).matrix.f : 0;
+        minX = Math.min(minX, tx + bbox.x);
+        minY = Math.min(minY, ty + bbox.y);
+        maxX = Math.max(maxX, tx + bbox.x + bbox.width);
+        maxY = Math.max(maxY, ty + bbox.y + bbox.height);
+    });
+    const svgRect = svg.node().getBoundingClientRect();
+    const graphWidth = maxX - minX;
+    const graphHeight = maxY - minY;
+    // Calculate scale to fit
+    const scale = Math.min(svgRect.width / graphWidth, svgRect.height / graphHeight, 1);
+    zoomLevel = scale;
+    // Center graph
+    panOffset.x = svgRect.width / 2 - (minX + graphWidth / 2) * scale;
+    panOffset.y = svgRect.height / 2 - (minY + graphHeight / 2) * scale;
+    updateTransform();
+}
