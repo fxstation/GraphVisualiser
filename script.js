@@ -144,6 +144,8 @@ function updateTree() {
             .attr("fill", d.data.color)
             .attr("stroke", d.data === selectedNode ? "red" : "black")
             .attr("stroke-width", 2);
+        // Move node group to front so it is above edges
+        this.parentNode.appendChild(this);
         // Set transform so node is centered
         d3.select(this).attr("transform", `translate(${d.y + leftShift - centerX},${d.x + topShift - centerY})`);
     });
