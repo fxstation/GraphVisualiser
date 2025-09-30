@@ -28,7 +28,7 @@ svg.attr("width", width).attr("height", height);
 
 const g = svg.append("g").attr("transform", "translate(40,0)");
 
-const treeLayout = d3.tree().size([height - 100, width - 200]);
+const treeLayout = d3.tree(); // Remove fixed size here
 
 function updateTree() {
     // Compute child_power and total_power
@@ -48,17 +48,41 @@ function updateTree() {
 
     // Update tree layout
     root = d3.hierarchy(treeData);
+    // Calculate dynamic size based on node count and depth
+    const allNodes = root.descendants();
+    const maxDepth = Math.max(...allNodes.map(n => n.depth));
+    const nodeHeight = 80;
+    const nodeWidth = 220;
+    // Find min/max x and y for all nodes to avoid overlap and fit SVG
+    treeLayout.size([1, 1]); // Temporary to get positions
     treeLayout(root);
-
+    const minX = Math.min(...allNodes.map(n => n.x));
+    const maxX = Math.max(...allNodes.map(n => n.x));
+    const minY = Math.min(...allNodes.map(n => n.y));
+    const maxY = Math.max(...allNodes.map(n => n.y));
+    // Add margin
+    const margin = 40;
+    const svgWidth = Math.max(maxY - minY + nodeWidth + margin * 2, 800);
+    const svgHeight = Math.max(maxX - minX + nodeHeight + margin * 2, 600);
+    treeLayout.size([svgHeight - margin * 2, svgWidth - margin * 2]);
+    treeLayout(root);
+    d3.select("#tree-svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+    // Calculate left/top shift so tree is always visible
+    const leftShift = margin - minY;
+    const topShift = margin - minX;
+    // Store leftShift/topShift globally for drag logic
+    window.leftShift = leftShift;
+    window.topShift = topShift;
     // Update links
     const link = g.selectAll(".link")
         .data(root.links())
         .join("path")
         .attr("class", "link")
         .attr("d", d3.linkHorizontal()
-            .x(d => d.y)
-            .y(d => d.x));
-
+            .x(d => d.y + leftShift)
+            .y(d => d.x + topShift));
     // Update nodes
     const node = g.selectAll(".node")
         .data(root.descendants(), d => d.data.id)
@@ -96,7 +120,6 @@ function updateTree() {
         const textBBox = textGroup.node().getBBox();
         const centerX = textBBox.x + textBBox.width / 2;
         const centerY = textBBox.y + textBBox.height / 2;
-        d3.select(this).attr("transform", `translate(${d.y - centerX},${d.x - centerY})`);
         d.centerX = centerX;
         d.centerY = centerY;
         d.rectX = textBBox.x - 5;
@@ -112,31 +135,43 @@ function updateTree() {
             .attr("fill", d.data.color)
             .attr("stroke", d.data === selectedNode ? "red" : "black")
             .attr("stroke-width", 2);
+        // Set transform so node is centered
+        d3.select(this).attr("transform", `translate(${d.y + leftShift - centerX},${d.x + topShift - centerY})`);
     });
+
+    // Update links
+    link.attr("d", d3.linkHorizontal()
+        .x(d => d.y + leftShift)
+        .y(d => d.x + topShift));
 }
 
 function dragStart(event, d) {
     draggedNode = d.data;
     selectNode(draggedNode);
-    d.dragOffsetX = event.x - d.y;
-    d.dragOffsetY = event.y - d.x;
+    // Use leftShift/topShift for correct offset
+    d.dragOffsetX = event.x - (d.y + (window.leftShift || 0));
+    d.dragOffsetY = event.y - (d.x + (window.topShift || 0));
     d3.select(this).raise();
 }
 
 function drag(event, d) {
     isDragging = true;
+    // Use leftShift/topShift for correct position
     const newX = event.x - d.dragOffsetX;
     const newY = event.y - d.dragOffsetY;
     d3.select(this).attr("transform", `translate(${newX - d.centerX},${newY - d.centerY})`);
 }
 
 function dragEnd(event, d) {
+    // Use leftShift/topShift for pointer position
     const [px, py] = d3.pointer(event, g.node());
+    const x = px - (window.leftShift || 0);
+    const y = py - (window.topShift || 0);
     let foundTarget = null;
     root.descendants().forEach(h => {
         if (h.data === draggedNode) return;
-        const rectLeft = h.y - h.centerX + h.rectX;
-        const rectTop = h.x - h.centerY + h.rectY;
+        const rectLeft = h.y - h.centerX + h.rectX + (window.leftShift || 0);
+        const rectTop = h.x - h.centerY + h.rectY + (window.topShift || 0);
         if (px >= rectLeft && px <= rectLeft + h.rectWidth && py >= rectTop && py <= rectTop + h.rectHeight) {
             foundTarget = h.data;
         }
@@ -310,6 +345,9 @@ function updateDisplayOptions() {
     });
     // For order, make draggable, but for simplicity, fixed order
 }
+
+// Remove previous style injection if present
+// Add scrollable style to tree-container in index.html instead
 
 // Add node display options UI to properties panel
 const propertiesPanel = document.getElementById("properties");

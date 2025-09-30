@@ -6,6 +6,25 @@
     <title>Interactive Tree Visualizer</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html, body, #app {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #tree-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100vw;
+            max-height: 100vh;
+            overflow: auto;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        #tree-svg {
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
