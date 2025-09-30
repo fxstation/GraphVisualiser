@@ -65,14 +65,16 @@ function updateTree() {
     // Set tree layout size so nodes do not overlap
     const svgHeight = Math.max(maxBreadth * minVerticalSpacing, 600);
     const svgWidth = Math.max((maxDepth + 2) * minHorizontalSpacing, 800);
-    treeLayout.size([svgHeight - 80, svgWidth - 80]);
+    
+    const margin = 40;
+    treeLayout.size([svgHeight - (2*margin), svgWidth - (2*margin)]);
     treeLayout(root);
     // Calculate min/max after layout
     const minX = Math.min(...allNodes.map(n => n.x));
     const maxX = Math.max(...allNodes.map(n => n.x));
     const minY = Math.min(...allNodes.map(n => n.y));
     const maxY = Math.max(...allNodes.map(n => n.y));
-    const margin = 40;
+    
     // Calculate left/top shift so tree is always visible
     const leftShift = margin - minY;
     const topShift = margin - minX + margin; // Add extra margin to top
@@ -82,7 +84,7 @@ function updateTree() {
     d3.select("#tree-svg")
         .attr("width", svgWidth)
         .attr("height", svgHeight)
-        .style("min-width", svgWidth + "px")
+        .style("min-width", svgWidth + minHorizontalSpacing/2 + "px")
         .style("min-height", svgHeight + "px");
     // Update links
     const link = g.selectAll(".link")
