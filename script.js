@@ -5,6 +5,11 @@ let treeData = {
     color: "#ffffff",
     location: "",
     note: "",
+    part_number: "",
+    reference: "",
+    price: "",
+    vendor: "",
+    internal_number: "",
     children: [],
     displayOptions: {
         name: true,
@@ -12,7 +17,12 @@ let treeData = {
         child_power: true,
         total_power: true,
         location: true,
-        note: true
+        note: true,
+        part_number: true,
+        reference: true,
+        price: true,
+        vendor: true,
+        internal_number: true
     }
 };
 
@@ -20,7 +30,7 @@ let draggedNode = null;
 let dropTarget = null;
 let selectedNode = null;
 let nodeIdCounter = 1;
-let displayAttributes = ['name', 'power', 'child_power', 'total_power', 'location', 'note'];
+let displayAttributes = ['name', 'power', 'child_power', 'total_power', 'location', 'note', 'part_number', 'reference', 'price', 'vendor', 'internal_number'];
 let root;
 let isDragging = false;
 let isPanning = false;
@@ -55,6 +65,11 @@ function updateTree() {
         // Ensure new attributes exist
         if (node.location === undefined) node.location = "";
         if (node.note === undefined) node.note = "";
+        if (node.part_number === undefined) node.part_number = "";
+        if (node.reference === undefined) node.reference = "";
+        if (node.price === undefined) node.price = "";
+        if (node.vendor === undefined) node.vendor = "";
+        if (node.internal_number === undefined) node.internal_number = "";
         if (!node.displayOptions) {
             node.displayOptions = {};
             displayAttributes.forEach(attr => node.displayOptions[attr] = true);
@@ -139,6 +154,11 @@ function updateTree() {
             if (attr === 'total_power') return `Total Power: ${d.data.total_power}`;
             if (attr === 'location') return `Location: ${d.data.location}`;
             if (attr === 'note') return `Note: ${d.data.note}`;
+            if (attr === 'part_number') return `Part Number: ${d.data.part_number}`;
+            if (attr === 'reference') return `Reference: ${d.data.reference}`;
+            if (attr === 'price') return `Price: ${d.data.price}`;
+            if (attr === 'vendor') return `Vendor: ${d.data.vendor}`;
+            if (attr === 'internal_number') return `Internal Number: ${d.data.internal_number}`;
         });
         lines.forEach((line, i) => {
             textGroup.append("tspan")
@@ -253,6 +273,11 @@ function selectNode(node) {
     document.getElementById("node-color").value = node.color;
     document.getElementById("node-location").value = node.location || "";
     document.getElementById("node-note").value = node.note || "";
+    document.getElementById("node-part-number").value = node.part_number || "";
+    document.getElementById("node-reference").value = node.reference || "";
+    document.getElementById("node-price").value = node.price || "";
+    document.getElementById("node-vendor").value = node.vendor || "";
+    document.getElementById("node-internal-number").value = node.internal_number || "";
     updateNodeDisplayOptionsUI();
     updateTree();
 }
@@ -283,6 +308,11 @@ function updateNodeProperties() {
         selectedNode.color = document.getElementById("node-color").value;
         selectedNode.location = document.getElementById("node-location").value;
         selectedNode.note = document.getElementById("node-note").value;
+        selectedNode.part_number = document.getElementById("node-part-number").value;
+        selectedNode.reference = document.getElementById("node-reference").value;
+        selectedNode.price = document.getElementById("node-price").value;
+        selectedNode.vendor = document.getElementById("node-vendor").value;
+        selectedNode.internal_number = document.getElementById("node-internal-number").value;
         // Update display options from checkboxes
         displayAttributes.forEach(attr => {
             const cb = document.getElementById("node-display-" + attr);
@@ -302,6 +332,11 @@ function addNode() {
             color: "#ffffff",
             location: "",
             note: "",
+            part_number: "",
+            reference: "",
+            price: "",
+            vendor: "",
+            internal_number: "",
             children: [],
             displayOptions: {
                 name: true,
@@ -309,7 +344,12 @@ function addNode() {
                 child_power: true,
                 total_power: true,
                 location: true,
-                note: true
+                note: true,
+                part_number: true,
+                reference: true,
+                price: true,
+                vendor: true,
+                internal_number: true
             }
         };
         parent.children.push(newNode);
@@ -363,7 +403,9 @@ function importTree(event) {
                             name: true,
                             power: true,
                             child_power: true,
-                            total_power: true
+                            total_power: true,
+                            location: true,
+                            note: true
                         };
                     }
                     if (node.children) {
@@ -424,6 +466,11 @@ document.getElementById("node-power").addEventListener("input", updateNodeProper
 document.getElementById("node-color").addEventListener("input", updateNodeProperties);
 document.getElementById("node-location").addEventListener("input", updateNodeProperties);
 document.getElementById("node-note").addEventListener("input", updateNodeProperties);
+document.getElementById("node-part-number").addEventListener("input", updateNodeProperties);
+document.getElementById("node-reference").addEventListener("input", updateNodeProperties);
+document.getElementById("node-price").addEventListener("input", updateNodeProperties);
+document.getElementById("node-vendor").addEventListener("input", updateNodeProperties);
+document.getElementById("node-internal-number").addEventListener("input", updateNodeProperties);
 
 function updateTransform() {
     g.attr("transform", `translate(${panOffset.x},${panOffset.y}) scale(${zoomLevel})`);
@@ -645,6 +692,11 @@ function duplicateNode() {
             color: selectedNode.color,
             location: selectedNode.location,
             note: selectedNode.note,
+            part_number: selectedNode.part_number,
+            reference: selectedNode.reference,
+            price: selectedNode.price,
+            vendor: selectedNode.vendor,
+            internal_number: selectedNode.internal_number,
             children: [],
             displayOptions: { ...selectedNode.displayOptions }
         };
