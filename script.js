@@ -38,6 +38,7 @@ let panStart = null;
 let panTransform = {x: 0, y: 0};
 let zoomLevel = 1;
 let panOffset = {x: 0, y: 0};
+let verticalSpacingAdjust = 0;
 
 const svg = d3.select("#tree-svg");
 const width = window.innerWidth - 400;
@@ -90,8 +91,9 @@ function updateTree() {
     const maxBreadth = Math.max(...Object.values(depthCounts));
     const nodeHeight = 80;
     const nodeWidth = 220;
+    const VERTICAL_SPACING_EXTRA = 60; // Extra vertical spacing between nodes
     // Estimate vertical spacing to avoid overlap
-    const minVerticalSpacing = nodeHeight + 20;
+    let minVerticalSpacing = nodeHeight + 20 + verticalSpacingAdjust;
     const minHorizontalSpacing = nodeWidth + 20;
     // Set tree layout size so nodes do not overlap
     const svgHeight = Math.max(maxBreadth * minVerticalSpacing, 600);
@@ -753,3 +755,12 @@ function safeTreeChange(fn) {
     pushUndoState();
     fn();
 }
+
+document.getElementById("increase-spacing").addEventListener("click", function() {
+    verticalSpacingAdjust += 20;
+    updateTree();
+});
+document.getElementById("decrease-spacing").addEventListener("click", function() {
+    verticalSpacingAdjust = Math.max(verticalSpacingAdjust - 20, 0);
+    updateTree();
+});
