@@ -764,3 +764,40 @@ document.getElementById("decrease-spacing").addEventListener("click", function()
     verticalSpacingAdjust = Math.max(verticalSpacingAdjust - 20, 0);
     updateTree();
 });
+
+function createColorPicker() {
+    const colorInput = document.getElementById("node-color");
+    const presetColors = [
+        "#ffffff", "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#795548", "#607d8b"
+    ];
+    let presetDiv = document.getElementById("preset-color-list");
+    if (!presetDiv) {
+        presetDiv = document.createElement("div");
+        presetDiv.id = "preset-color-list";
+        presetDiv.style.display = "flex";
+        presetDiv.style.flexWrap = "wrap";
+        presetDiv.style.gap = "4px";
+        presetDiv.style.margin = "6px 0";
+        colorInput.parentNode.insertBefore(presetDiv, colorInput.nextSibling);
+    }
+    presetDiv.innerHTML = "";
+    presetColors.forEach(color => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.style.background = color;
+        btn.style.width = "24px";
+        btn.style.height = "24px";
+        btn.style.border = "1px solid #888";
+        btn.style.borderRadius = "4px";
+        btn.style.cursor = "pointer";
+        btn.title = color;
+        btn.onclick = () => {
+            colorInput.value = color;
+            updateNodeProperties();
+        };
+        presetDiv.appendChild(btn);
+    });
+}
+
+// Call after DOM loaded
+createColorPicker();
